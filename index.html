@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard POI 2026 — UTI PNCM</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --azul:       #005B8E;
+    --azul-dark:  #003D5E;
+    --azul-light: #1A82C0;
+    --naranja:    #E8A020;
+    --naranja-dk: #C4841A;
+    --verde:      #1A9E5C;
+    --verde-dk:   #137A46;
+    --rojo:       #D63031;
+    --fondo:      #F0F6FB;
+    --card:       #FFFFFF;
+    --texto:      #1A2A3A;
+    --subtexto:   #5A7A8A;
+    --borde:      #D0E4F0;
+    --header-h:   70px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Sora', sans-serif;
+    background: var(--fondo);
+    color: var(--texto);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ─────────────────────────────────────── */
+  header {
+    position: sticky; top: 0; z-index: 100;
+    height: var(--header-h);
+    background: var(--azul-dark);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 2rem;
+    box-shadow: 0 3px 20px rgba(0,0,0,.25);
+  }
+  .header-brand { display: flex; align-items: center; gap: 14px; }
+  .header-logo {
+    width: 42px; height: 42px; border-radius: 50%;
+    background: var(--naranja);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 800; color: #fff; flex-shrink: 0;
+  }
+  .header-title { line-height: 1.2; }
+  .header-title strong { color: #fff; font-size: 1rem; font-weight: 700; display: block; }
+  .header-title span { color: var(--naranja); font-size: .75rem; font-weight: 400; }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .badge-anio {
+    background: var(--naranja); color: #fff;
+    padding: 4px 12px; border-radius: 20px;
+    font-size: .75rem; font-weight: 700; letter-spacing: .5px;
+  }
+  #reloj {
+    font-family: 'JetBrains Mono', monospace;
+    color: rgba(255,255,255,.7); font-size: .8rem;
+  }
+  /* nav tabs */
+  nav {
+    background: var(--azul);
+    display: flex; align-items: center; gap: 0;
+    padding: 0 2rem;
+    border-bottom: 3px solid var(--naranja);
+    overflow-x: auto;
+  }
+  nav a {
+    color: rgba(255,255,255,.7);
+    text-decoration: none; font-size: .85rem; font-weight: 600;
+    padding: 12px 18px;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -3px;
+    transition: all .2s; white-space: nowrap;
+    cursor: pointer;
+  }
+  nav a.active, nav a:hover {
+    color: #fff; border-bottom-color: var(--naranja);
+    background: rgba(255,255,255,.08);
+  }
+
+  /* ── MAIN LAYOUT ─────────────────────────────────── */
+  main { max-width: 1400px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── SECTION TITLE ───────────────────────────────── */
+  .section-heading {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 1.5rem;
+  }
+  .section-heading .accent {
+    width: 6px; height: 36px; border-radius: 4px;
+    background: linear-gradient(180deg, var(--naranja), var(--azul));
+    flex-shrink: 0;
+  }
+  .section-heading h2 { font-size: 1.4rem; font-weight: 700; color: var(--azul-dark); }
+  .section-heading p { font-size: .85rem; color: var(--subtexto); margin-top: 2px; }
+
+  /* ── KPI CARDS ───────────────────────────────────── */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.2rem; margin-bottom: 2rem;
+  }
+  .kpi-card {
+    background: var(--card); border-radius: 14px;
+    padding: 1.4rem 1.2rem;
+    border: 1px solid var(--borde);
+    box-shadow: 0 2px 12px rgba(0,91,142,.06);
+    position: relative; overflow: hidden;
+    transition: transform .2s, box-shadow .2s;
+  }
+  .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(0,91,142,.13); }
+  .kpi-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 4px; border-radius: 4px 4px 0 0;
+  }
+  .kpi-card.azul::before  { background: var(--azul); }
+  .kpi-card.naranja::before { background: var(--naranja); }
+  .kpi-card.verde::before   { background: var(--verde); }
+  .kpi-card.rojo::before    { background: var(--rojo); }
+  .kpi-icon { font-size: 2rem; margin-bottom: .5rem; }
+  .kpi-label { font-size: .75rem; font-weight: 600; color: var(--subtexto); text-transform: uppercase; letter-spacing: .5px; margin-bottom: .3rem; }
+  .kpi-value { font-size: 2.4rem; font-weight: 800; line-height: 1; margin-bottom: .2rem; }
+  .kpi-card.azul   .kpi-value { color: var(--azul); }
+  .kpi-card.naranja .kpi-value { color: var(--naranja-dk); }
+  .kpi-card.verde  .kpi-value  { color: var(--verde); }
+  .kpi-card.rojo   .kpi-value  { color: var(--rojo); }
+  .kpi-sub { font-size: .78rem; color: var(--subtexto); }
+
+  /* ── PROGRESS BARS ───────────────────────────────── */
+  .progress-wrap { margin-bottom: .6rem; }
+  .progress-label { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: .82rem; font-weight: 600; color: var(--texto); }
+  .progress-bar-bg { height: 10px; background: #E3EDF4; border-radius: 99px; overflow: hidden; }
+  .progress-bar-fill {
+    height: 100%; border-radius: 99px;
+    transition: width 1.2s cubic-bezier(.4,0,.2,1);
+  }
+  .fill-azul    { background: linear-gradient(90deg, var(--azul-light), var(--azul-dark)); }
+  .fill-naranja { background: linear-gradient(90deg, var(--naranja), var(--naranja-dk)); }
+  .fill-verde   { background: linear-gradient(90deg, #2ECC71, var(--verde-dk)); }
+
+  /* ── GRID CARDS ──────────────────────────────────── */
+  .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem; }
+  .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem; }
+  .card {
+    background: var(--card); border-radius: 14px;
+    border: 1px solid var(--borde);
+    box-shadow: 0 2px 12px rgba(0,91,142,.06);
+    overflow: hidden;
+  }
+  .card-header {
+    padding: .9rem 1.4rem;
+    background: linear-gradient(135deg, var(--azul-dark) 0%, var(--azul) 100%);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-header h3 { font-size: .9rem; font-weight: 700; color: #fff; }
+  .card-header .badge {
+    margin-left: auto; background: rgba(255,255,255,.2);
+    color: #fff; font-size: .7rem; padding: 2px 8px; border-radius: 10px;
+  }
+  .card-body { padding: 1.4rem; }
+  .card-naranja .card-header { background: linear-gradient(135deg, var(--naranja-dk), var(--naranja)); }
+  .card-verde   .card-header { background: linear-gradient(135deg, var(--verde-dk), var(--verde)); }
+
+  /* ── TABLA ───────────────────────────────────────── */
+  .tabla-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: .83rem; }
+  thead tr { background: var(--azul); }
+  thead th { padding: 10px 12px; text-align: left; color: #fff; font-weight: 600; white-space: nowrap; }
+  tbody tr { border-bottom: 1px solid var(--borde); }
+  tbody tr:hover { background: #EBF5FB; }
+  tbody td { padding: 9px 12px; color: var(--texto); }
+  td.center { text-align: center; }
+  .chip {
+    display: inline-block; padding: 2px 10px; border-radius: 20px;
+    font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .3px;
+  }
+  .chip-green  { background: #D5F5E3; color: var(--verde-dk); }
+  .chip-orange { background: #FDEBD0; color: var(--naranja-dk); }
+  .chip-gray   { background: #EAF2F8; color: var(--subtexto); }
+  .chip-red    { background: #FAEAEA; color: var(--rojo); }
+
+  /* ── ALERT BOX ───────────────────────────────────── */
+  .alert { border-radius: 10px; padding: 1rem 1.2rem; margin-bottom: 1rem; border-left: 5px solid; }
+  .alert-info    { background: #EBF5FB; border-color: var(--azul); }
+  .alert-warn    { background: #FEF9E7; border-color: var(--naranja); }
+  .alert-success { background: #EAFAF1; border-color: var(--verde); }
+  .alert-danger  { background: #FDEDEC; border-color: var(--rojo); }
+  .alert strong  { display: block; margin-bottom: 4px; font-size: .85rem; }
+  .alert p       { font-size: .82rem; color: var(--subtexto); line-height: 1.5; }
+
+  /* ── CHARTS ──────────────────────────────────────── */
+  .chart-wrap { position: relative; }
+
+  /* ── TIMELINE ────────────────────────────────────── */
+  .timeline { position: relative; padding-left: 32px; }
+  .timeline::before {
+    content: ''; position: absolute; left: 10px; top: 0; bottom: 0;
+    width: 2px; background: var(--borde);
+  }
+  .tl-item { position: relative; margin-bottom: 1.2rem; }
+  .tl-dot {
+    position: absolute; left: -27px; top: 2px;
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid var(--card);
+  }
+  .tl-dot.green  { background: var(--verde); box-shadow: 0 0 0 3px #D5F5E3; }
+  .tl-dot.orange { background: var(--naranja); box-shadow: 0 0 0 3px #FDEBD0; }
+  .tl-dot.gray   { background: #BDC3C7; }
+  .tl-date { font-size: .72rem; font-weight: 700; color: var(--subtexto); text-transform: uppercase; margin-bottom: 2px; }
+  .tl-text { font-size: .83rem; color: var(--texto); line-height: 1.5; }
+  .tl-memo { font-family: 'JetBrains Mono', monospace; font-size: .75rem; color: var(--azul); background: #EBF5FB; padding: 1px 6px; border-radius: 4px; }
+
+  /* ── RISK MATRIX ─────────────────────────────────── */
+  .risk-item {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: .9rem; border-radius: 10px; margin-bottom: .8rem;
+    border: 1px solid var(--borde);
+  }
+  .risk-icon { font-size: 1.5rem; flex-shrink: 0; margin-top: 2px; }
+  .risk-title { font-size: .85rem; font-weight: 700; margin-bottom: 4px; }
+  .risk-desc  { font-size: .78rem; color: var(--subtexto); line-height: 1.5; }
+  .risk-item.high   { background: #FEF2F2; border-color: #FECACA; }
+  .risk-item.medium { background: #FFFBEB; border-color: #FDE68A; }
+  .risk-item.low    { background: #F0FDF4; border-color: #BBF7D0; }
+
+  /* ── FOOTER ──────────────────────────────────────── */
+  footer {
+    text-align: center; padding: 2rem 1rem;
+    font-size: .77rem; color: var(--subtexto);
+    border-top: 1px solid var(--borde); margin-top: 2rem;
+  }
+
+  /* ── RESPONSIVE ──────────────────────────────────── */
+  @media (max-width: 768px) {
+    .grid-2 { grid-template-columns: 1fr; }
+    .grid-3 { grid-template-columns: 1fr; }
+    main { padding: 1.2rem 1rem; }
+    .kpi-value { font-size: 1.8rem; }
+  }
+
+  /* ── ANIMATIONS ──────────────────────────────────── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .page.active .kpi-card,
+  .page.active .card { animation: fadeUp .4s ease both; }
+  .page.active .kpi-card:nth-child(1) { animation-delay: .05s; }
+  .page.active .kpi-card:nth-child(2) { animation-delay: .10s; }
+  .page.active .kpi-card:nth-child(3) { animation-delay: .15s; }
+  .page.active .kpi-card:nth-child(4) { animation-delay: .20s; }
+  .page.active .kpi-card:nth-child(5) { animation-delay: .25s; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-brand">
+    <div class="header-logo">CM</div>
+    <div class="header-title">
+      <strong>Programa Nacional Cuna Más</strong>
+      <span>Unidad de Tecnologías de la Información · UTI</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="badge-anio">POI 2026</span>
+    <span id="reloj"></span>
+  </div>
+</header>
+
+<nav>
+  <a class="active" onclick="showPage('resumen',this)">📊 Resumen Ejecutivo</a>
+  <a onclick="showPage('metas',this)">🎯 Metas Físicas</a>
+  <a onclick="showPage('cualitativo',this)">📝 Análisis Cualitativo</a>
+  <a onclick="showPage('riesgos',this)">⚠️ Riesgos</a>
+  <a onclick="showPage('documentos',this)">📁 Documentos</a>
+  <a onclick="showPage('alineacion',this)">🔗 Alineación PEI</a>
+</nav>
+
+<main>
+
+<!-- ════════════════════════ RESUMEN EJECUTIVO ════════════════════════ -->
+<div id="page-resumen" class="page active">
+  <div class="section-heading">
+    <div class="accent"></div>
+    <div>
+      <h2>Resumen Ejecutivo — POI 2026 | UTI</h2>
+      <p>Seguimiento de metas físicas: Febrero y Marzo 2026 · Base legal: R.M. N.° 351-2025-MIDIS</p>
+    </div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card azul">
+      <div class="kpi-icon">🗂️</div>
+      <div class="kpi-label">Meta Anual Programada</div>
+      <div class="kpi-value">17</div>
+      <div class="kpi-sub">Informes durante 2026</div>
+    </div>
+    <div class="kpi-card verde">
+      <div class="kpi-icon">✅</div>
+      <div class="kpi-label">Metas Ejecutadas (acum.)</div>
+      <div class="kpi-value">4</div>
+      <div class="kpi-sub">Al cierre del I Trimestre</div>
+    </div>
+    <div class="kpi-card naranja">
+      <div class="kpi-icon">📈</div>
+      <div class="kpi-label">Avance Acumulado</div>
+      <div class="kpi-value">23.5%</div>
+      <div class="kpi-sub">Sobre meta anual</div>
+    </div>
+    <div class="kpi-card azul">
+      <div class="kpi-icon">📅</div>
+      <div class="kpi-label">Períodos Reportados</div>
+      <div class="kpi-value">2</div>
+      <div class="kpi-sub">Feb. y Mar. 2026</div>
+    </div>
+    <div class="kpi-card verde">
+      <div class="kpi-icon">💯</div>
+      <div class="kpi-label">Cumplimiento Feb.</div>
+      <div class="kpi-value">100%</div>
+      <div class="kpi-sub">2 de 2 metas</div>
+    </div>
+    <div class="kpi-card verde">
+      <div class="kpi-icon">💯</div>
+      <div class="kpi-label">Cumplimiento Mar.</div>
+      <div class="kpi-value">100%</div>
+      <div class="kpi-sub">2 de 2 metas</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header"><h3>📊 Avance por Trimestre (Programado vs Ejecutado)</h3></div>
+      <div class="card-body">
+        <div class="chart-wrap"><canvas id="chartTrimestral" height="220"></canvas></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>🗓️ Progresión Mensual de Metas</h3></div>
+      <div class="card-body">
+        <div class="chart-wrap"><canvas id="chartMensual" height="220"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header"><h3>🎯 % Avance Acumulado — I Trimestre</h3></div>
+      <div class="card-body">
+        <br>
+        <div class="progress-wrap">
+          <div class="progress-label"><span>Meta Anual (17 informes)</span><span>23.5%</span></div>
+          <div class="progress-bar-bg"><div class="progress-bar-fill fill-azul" style="width:23.5%"></div></div>
+        </div>
+        <br>
+        <div class="progress-wrap">
+          <div class="progress-label"><span>I Trimestre (5 prog. / 4 ejec.)</span><span>80%</span></div>
+          <div class="progress-bar-bg"><div class="progress-bar-fill fill-verde" style="width:80%"></div></div>
+        </div>
+        <br>
+        <div class="progress-wrap">
+          <div class="progress-label"><span>Febrero — Meta período</span><span>100%</span></div>
+          <div class="progress-bar-bg"><div class="progress-bar-fill fill-verde" style="width:100%"></div></div>
+        </div>
+        <br>
+        <div class="progress-wrap">
+          <div class="progress-label"><span>Marzo — Meta período</span><span>100%</span></div>
+          <div class="progress-bar-bg"><div class="progress-bar-fill fill-verde" style="width:100%"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header card-naranja"><h3>⚙️ Distribución de Metas por Trimestre</h3></div>
+      <div class="card-body">
+        <div class="chart-wrap"><canvas id="chartPie" height="220"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="alert alert-success">
+    <strong>✅ La UTI alcanzó el 100% de sus metas en los períodos de Febrero y Marzo 2026</strong>
+    <p>La tarea "Implementación y Administración de los Sistemas de Tecnología de la Información" registra un avance acumulado del 23.53% sobre la meta anual de 17 informes. Enero no tenía meta asignada. Los 10 meses restantes representan 13 metas pendientes.</p>
+  </div>
+</div>
+
+<!-- ════════════════════════ METAS FÍSICAS ════════════════════════ -->
+<div id="page-metas" class="page">
+  <div class="section-heading">
+    <div class="accent"></div>
+    <div>
+      <h2>Ejecución de Metas Físicas — Detalle Mensual</h2>
+      <p>Tarea: Implementación y Administración de los Sistemas de TI · Unidad: Informe · Total Anual: 17</p>
+    </div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card azul">
+      <div class="kpi-icon">📌</div><div class="kpi-label">Unidad Medida</div>
+      <div class="kpi-value" style="font-size:1.6rem">Informe</div>
+      <div class="kpi-sub">Por período mensual</div>
+    </div>
+    <div class="kpi-card naranja">
+      <div class="kpi-icon">📋</div><div class="kpi-label">Categoría Presupuestal</div>
+      <div class="kpi-value" style="font-size:1.2rem">9001</div>
+      <div class="kpi-sub">Acciones Centrales</div>
+    </div>
+    <div class="kpi-card azul">
+      <div class="kpi-icon">🔗</div><div class="kpi-label">Actividad</div>
+      <div class="kpi-value" style="font-size:1.2rem">5000003</div>
+      <div class="kpi-sub">Gestión Administrativa</div>
+    </div>
+    <div class="kpi-card verde">
+      <div class="kpi-icon">🏛️</div><div class="kpi-label">Sede</div>
+      <div class="kpi-value" style="font-size:1.6rem">Lima</div>
+      <div class="kpi-sub">Sede Central PNCM</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:1.5rem">
+    <div class="card-header"><h3>📅 Tabla de Seguimiento Mensual 2026</h3><span class="badge">17 metas anuales</span></div>
+    <div class="card-body">
+      <div class="tabla-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Mes</th><th>Trimestre</th>
+              <th class="center">Programado</th><th class="center">Ejecutado</th>
+              <th class="center">% Período</th><th class="center">% Acum.</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Enero 2026</td><td>I</td><td class="center">0</td><td class="center">0</td><td class="center">—</td><td class="center">0.0%</td><td><span class="chip chip-gray">Sin Meta</span></td></tr>
+            <tr><td>Febrero 2026</td><td>I</td><td class="center">2</td><td class="center">2</td><td class="center">100%</td><td class="center">13.0%</td><td><span class="chip chip-green">Cumplido</span></td></tr>
+            <tr><td>Marzo 2026</td><td>I</td><td class="center">2</td><td class="center">2</td><td class="center">100%</td><td class="center">23.5%</td><td><span class="chip chip-green">Cumplido</span></td></tr>
+            <tr><td>Abril 2026</td><td>II</td><td class="center">1</td><td class="center">—</td><td class="center">—</td><td class="center">—</td><td><span class="chip chip-orange">Pendiente</span></td></tr>
+            <tr><td>Mayo 2026</td><td>II</td><td class="center">2</td><td class="center">—</td><td class="center">—</td><td class="center">—</td><td><span class="chip chip-orange">Pendiente</span></td></tr>
+            <tr><td>Junio 2026</td><td>II</td><td class="center">2</td><td class="center">—</td><td class="center">—</td><td class="center">—</td><td><span class="chip chip-orange">Pendiente</span></td></tr>
+            <tr><td>Julio 2026</td><td>III</td><td class="center">1</td><td class="center">—</td><td class="center">—</td><td class="center">—</td><td><span class="chip chip-orange">Pendiente</span></td></tr>
+            <tr><td>Agosto 2026</td><td>III</td><td class="center">0</td><td class="center">—</td><td class="center">—</td><td class="center">—</td><td><span class="chip chip-gray">Sin Meta</span></td></tr>
+            <tr><td>Setiembre 2026</td><td>III</td><td class="center">2</td><td class="center">—</td><td class="center">—</td><td class="center">—</td><td><span class="chip chip-orange">Pendiente</span></td></tr>
+            <tr><td>Octubre 2026</td><td>IV</td><td class="center">1</td><td class="center">—</td><td class="center">—</td><td class="center">—</td><td><span class="chip chip-orange">Pendiente</span></td></tr>
+            <tr><td>Noviembre 2026</td><td>IV</td><td class="center">2</td><td class="center">—</td><td class="center">—</td><td class="center">—</td><td><span class="chip chip-orange">Pendiente</span></td></tr>
+            <tr><td>Diciembre 2026</td><td>IV</td><td class="center">2</td><td class="center">—</td><td class="center">—</td><td class="center">—</td><td><span class="chip chip-orange">Pendiente</span></td></tr>
+            <tr style="background:#EBF5FB;font-weight:700">
+              <td><strong>TOTAL ANUAL</strong></td><td></td>
+              <td class="center"><strong>17</strong></td><td class="center"><strong>4</strong></td>
+              <td class="center"><strong>—</strong></td><td class="center"><strong>23.5%</strong></td>
+              <td><span class="chip chip-green">En Curso</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3>📊 Metas Programadas vs Ejecutadas — Mes a Mes</h3></div>
+    <div class="card-body">
+      <canvas id="chartBarMeses" height="180"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════ ANÁLISIS CUALITATIVO ════════════════════════ -->
+<div id="page-cualitativo" class="page">
+  <div class="section-heading">
+    <div class="accent"></div>
+    <div>
+      <h2>Análisis Cualitativo — Formato N.° 01</h2>
+      <p>Factores de cumplimiento, dificultades, medidas adoptadas y mejora continua</p>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header card-verde"><h3>✅ Febrero 2026 — Factores de Cumplimiento</h3></div>
+      <div class="card-body">
+        <div class="timeline">
+          <div class="tl-item">
+            <div class="tl-dot green"></div>
+            <div class="tl-date">Feb. 2026 · Habilitación Presupuestal</div>
+            <div class="tl-text">Se solicitó habilitación presupuestal mediante nota de modificación para distribución de recursos Meta 0282 — período Feb.–Dic. 2026. <span class="tl-memo">MEMO 142-2026-UTI → UPPM</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot green"></div>
+            <div class="tl-date">Feb. 2026 · Antispam</div>
+            <div class="tl-text">Remisión de TdR para renovación de licencia de software antispam institucional. <span class="tl-memo">MEMO 062-2026-UTI → UA</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot orange"></div>
+            <div class="tl-date">Feb. 2026 · Internet UUTT (en proceso)</div>
+            <div class="tl-text">Remisión de TdR para contratación de internet dedicado y telefonía fija para Unidades Territoriales. En estudio de mercado. <span class="tl-memo">MEMO 063-2026-UTI → UA</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header card-verde"><h3>✅ Marzo 2026 — Factores de Cumplimiento</h3></div>
+      <div class="card-body">
+        <div class="timeline">
+          <div class="tl-item">
+            <div class="tl-dot green"></div>
+            <div class="tl-date">Mar. 2026 · Impresión/Fotocopiado</div>
+            <div class="tl-text">Revisión y validación del servicio de alquiler de impresión y fotocopiado — Sede Central. Conformidad otorgada. <span class="tl-memo">MEMO 170-2026-UTI → UA</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot green"></div>
+            <div class="tl-date">Mar. 2026 · Internet y Telefonía UUTT</div>
+            <div class="tl-text">Revisión y validación del Servicio de Internet Dedicado y Telefonía Fija para UUTT. Conformidad otorgada. <span class="tl-memo">MEMO 181-2026-UTI → UA</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header" style="background:linear-gradient(135deg,#922B21,#C0392B)"><h3>⚠️ Factores que Dificultaron el Cumplimiento</h3></div>
+      <div class="card-body">
+        <div class="alert alert-warn">
+          <strong>Febrero 2026</strong>
+          <p>Demora en trámites administrativos que dificultan la ejecución oportuna de actividades planificadas. Riesgo recurrente en entidades públicas con procesos de contratación complejos.</p>
+        </div>
+        <div class="alert alert-danger">
+          <strong>Marzo 2026</strong>
+          <p>Limitación de recursos presupuestales asignados a la UTI. Se anticipa posible solicitud de recursos adicionales para garantizar el cumplimiento integral del año.</p>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header" style="background:linear-gradient(135deg,#1A5276,#2471A3)"><h3>🔧 Medidas Adoptadas y Mejora Continua</h3></div>
+      <div class="card-body">
+        <div class="alert alert-info">
+          <strong>Medidas Adoptadas (Feb. y Mar.)</strong>
+          <p>Remisión anticipada de Términos de Referencia para todos los servicios requeridos. Coordinación permanente con personal técnico de la UTI para gestión de requerimientos.</p>
+        </div>
+        <div class="alert alert-success">
+          <strong>Mejora Continua (ambos períodos)</strong>
+          <p>Comunicación constante con Unidades y OOCC Territoriales vía grupos de WhatsApp, con recomendaciones de buenas prácticas en el uso de plataformas informáticas. Monitoreo centralizado de seguridad de red del PNCM para prevenir ciberataques.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════ RIESGOS ════════════════════════ -->
+<div id="page-riesgos" class="page">
+  <div class="section-heading">
+    <div class="accent"></div>
+    <div>
+      <h2>Análisis de Riesgos — UTI POI 2026</h2>
+      <p>Riesgos identificados en los períodos de Febrero y Marzo 2026</p>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div>
+      <div class="risk-item high">
+        <div class="risk-icon">💰</div>
+        <div>
+          <div class="risk-title">Limitación de Recursos Presupuestales <span class="chip chip-red">Alto</span></div>
+          <div class="risk-desc">La UTI reporta limitación de recursos asignados para el 2026. Sin habilitación presupuestal oportuna, el cumplimiento del II trimestre podría verse afectado. <br><strong>Mitigación:</strong> Gestión de nota de modificación presupuestal ante UPPM (Memo. 142).</div>
+        </div>
+      </div>
+      <div class="risk-item medium">
+        <div class="risk-icon">⏳</div>
+        <div>
+          <div class="risk-title">Demora en Trámites Administrativos <span class="chip chip-orange">Medio</span></div>
+          <div class="risk-desc">Los plazos de contratación de servicios TIC pueden exceder la programación de metas. Especialmente crítico para los servicios de internet y antispam. <br><strong>Mitigación:</strong> Remisión anticipada de TdR.</div>
+        </div>
+      </div>
+      <div class="risk-item medium">
+        <div class="risk-icon">🌐</div>
+        <div>
+          <div class="risk-title">Demora en Estudio de Mercado — Internet UUTT <span class="chip chip-orange">Medio</span></div>
+          <div class="risk-desc">El servicio de internet dedicado para Unidades Territoriales se encontraba en estudio de mercado al cierre de febrero, retrasando la emisión de la orden de servicio. <br><strong>Mitigación:</strong> Seguimiento activo desde UTI.</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="risk-item low">
+        <div class="risk-icon">🔒</div>
+        <div>
+          <div class="risk-title">Riesgos de Ciberseguridad <span class="chip chip-green">Bajo</span></div>
+          <div class="risk-desc">Posibilidad de ataques cibernéticos a la infraestructura de red del PNCM. La UTI monitorea centralizadamente la seguridad de la red. <br><strong>Mitigación:</strong> Monitoreo centralizado permanente.</div>
+        </div>
+      </div>
+      <div style="margin-top:1.5rem">
+        <div class="card">
+          <div class="card-header"><h3>🎯 Mapa de Calor de Riesgos</h3></div>
+          <div class="card-body">
+            <canvas id="chartRiesgo" height="240"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════ DOCUMENTOS ════════════════════════ -->
+<div id="page-documentos" class="page">
+  <div class="section-heading">
+    <div class="accent"></div>
+    <div>
+      <h2>Documentos Sustentatorios</h2>
+      <p>Memorandos emitidos por la UTI y la UPPM en los períodos de seguimiento</p>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header"><h3>📨 Memorandos — Período Febrero 2026</h3><span class="badge">4 documentos</span></div>
+      <div class="card-body">
+        <div class="tabla-wrap">
+          <table>
+            <thead><tr><th>N.° Memorando</th><th>Asunto</th><th>Destino</th></tr></thead>
+            <tbody>
+              <tr><td><span class="tl-memo">062-2026-UTI</span></td><td>TdR: Renovación licencia antispam</td><td>UA</td></tr>
+              <tr><td><span class="tl-memo">063-2026-UTI</span></td><td>TdR: Internet dedicado y telefonía UUTT</td><td>UA</td></tr>
+              <tr><td><span class="tl-memo">142-2026-UTI</span></td><td>Solicitud habilitación presupuestal</td><td>UPPM</td></tr>
+              <tr><td><span class="tl-memo">174-2026-UTI</span></td><td>Remisión Formato N.° 02 Feb.</td><td>UPPM</td></tr>
+              <tr><td><span class="tl-memo">025-2026-UPPM</span></td><td>Solicitud seguimiento POI — Feb.</td><td>UTI / otras</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>📨 Memorandos — Período Marzo 2026</h3><span class="badge">4 documentos</span></div>
+      <div class="card-body">
+        <div class="tabla-wrap">
+          <table>
+            <thead><tr><th>N.° Memorando</th><th>Asunto</th><th>Destino</th></tr></thead>
+            <tbody>
+              <tr><td><span class="tl-memo">170-2026-UTI</span></td><td>Conformidad: Impresión/fotocopiado Sede</td><td>UA</td></tr>
+              <tr><td><span class="tl-memo">181-2026-UTI</span></td><td>Conformidad: Internet y telefonía UUTT</td><td>UA</td></tr>
+              <tr><td><span class="tl-memo">234-2026-UTI</span></td><td>Remisión Formato N.° 02 Mar.</td><td>UPPM</td></tr>
+              <tr><td><span class="tl-memo">033-2026-UPPM</span></td><td>Solicitud seguimiento POI — Mar.</td><td>UTI / otras</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3>📊 Volumen de Memorandos por Período</h3></div>
+    <div class="card-body">
+      <canvas id="chartMemos" height="160"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════ ALINEACIÓN PEI ════════════════════════ -->
+<div id="page-alineacion" class="page">
+  <div class="section-heading">
+    <div class="accent"></div>
+    <div>
+      <h2>Alineación Estratégica — PEI 2024–2030</h2>
+      <p>Relación de la tarea UTI con los objetivos institucionales según R.M. N.° 060-2024-MIDIS</p>
+    </div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card azul">
+      <div class="kpi-icon">🏛️</div>
+      <div class="kpi-label">OEI vinculado</div>
+      <div class="kpi-value" style="font-size:1.4rem">OEI 08</div>
+      <div class="kpi-sub">Fortalecer la gestión institucional bajo enfoque de eficiencia</div>
+    </div>
+    <div class="kpi-card naranja">
+      <div class="kpi-icon">🔗</div>
+      <div class="kpi-label">AEI vinculada</div>
+      <div class="kpi-value" style="font-size:1.2rem">AEI 08.02</div>
+      <div class="kpi-sub">Transformación Digital implementada en el MIDIS</div>
+    </div>
+    <div class="kpi-card verde">
+      <div class="kpi-icon">📐</div>
+      <div class="kpi-label">Eje PEI</div>
+      <div class="kpi-value" style="font-size:1.4rem">EJE 2</div>
+      <div class="kpi-sub">Lineamiento 2.2 — Modernización del Estado</div>
+    </div>
+    <div class="kpi-card azul">
+      <div class="kpi-icon">🎯</div>
+      <div class="kpi-label">Finalidad PIA</div>
+      <div class="kpi-value" style="font-size:1.1rem">0088314</div>
+      <div class="kpi-sub">Desarrollar acciones de Tecnología de la Información</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:1.5rem">
+    <div class="card-header"><h3>🗺️ Cadena Estratégica UTI — PNCM 2026</h3></div>
+    <div class="card-body">
+      <div class="tabla-wrap">
+        <table>
+          <thead><tr><th>Nivel</th><th>Código</th><th>Descripción</th></tr></thead>
+          <tbody>
+            <tr><td>OEI</td><td>OEI 08</td><td>Fortalecer la gestión institucional bajo un enfoque de eficiencia.</td></tr>
+            <tr><td>AEI</td><td>AEI.08.02</td><td>Transformación Digital implementada en el MIDIS.</td></tr>
+            <tr><td>Centro de Costo</td><td>—</td><td>Unidad de Tecnologías de Información — PNCM</td></tr>
+            <tr><td>Categ. Presupuestal</td><td>9001</td><td>Acciones Centrales</td></tr>
+            <tr><td>Producto</td><td>3999999</td><td>Sin Producto</td></tr>
+            <tr><td>Actividad</td><td>5000003</td><td>Gestión Administrativa</td></tr>
+            <tr><td>Finalidad</td><td>0088314</td><td>Desarrollar Acciones de Tecnología de la Información</td></tr>
+            <tr><td>Eje PEI</td><td>EJE.2. LIN 2.2</td><td>Modernización del Estado</td></tr>
+            <tr><td>Tarea POI</td><td>—</td><td>Implementación y Administración de los Sistemas de TI</td></tr>
+            <tr><td>Unidad Medida</td><td>Informe</td><td>17 informes programados para 2026</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3>🏗️ Otras Unidades del PNCM alineadas al PEI 2024–2030</h3></div>
+    <div class="card-body">
+      <div class="tabla-wrap">
+        <table>
+          <thead><tr><th>Unidad</th><th>OEI</th><th>AEI</th><th>Actividad</th></tr></thead>
+          <tbody>
+            <tr><td>Unidad Técnica de Atención Integral</td><td>OEI 01</td><td>AEI.01.01 / AEI.01.02</td><td>Cuidado Diurno / Acompañamiento Familiar</td></tr>
+            <tr><td>Unidad de Tecnologías de Información</td><td>OEI 08</td><td>AEI.08.02</td><td>Gestión Administrativa (TI)</td></tr>
+            <tr><td>Unidad de Integridad y Gestión de Calidad</td><td>OEI 08</td><td>AEI.08.03 / AEI.08.05</td><td>Gestión Administrativa</td></tr>
+            <tr><td>Unidad de Gestión de Talento Humano</td><td>OEI 08</td><td>AEI.08.05</td><td>Gestión de Recursos Humanos</td></tr>
+            <tr><td>Dirección Ejecutiva</td><td>OEI 08</td><td>AEI.08.05</td><td>Conducción y Orientación Superior</td></tr>
+            <tr><td>Unidad de Administración</td><td>OEI 08</td><td>AEI.08.05</td><td>Gestión Administrativa</td></tr>
+            <tr><td>UPPM</td><td>OEI 08</td><td>AEI.08.05</td><td>Planeamiento y Presupuesto</td></tr>
+            <tr><td>Unidad Territorial</td><td>OEI 08</td><td>AEI.08.05</td><td>Gestión del Programa</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  <strong>Programa Nacional Cuna Más · MIDIS</strong> — Dashboard POI 2026 · Unidad de Tecnologías de la Información<br>
+  Datos al 22 de abril de 2026 · Base legal: R.M. N.° 351-2025-MIDIS · Alineado al PEI 2024–2030 (R.M. N.° 060-2024-MIDIS)
+</footer>
+
+<script>
+// ── RELOJ ────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  document.getElementById('reloj').textContent =
+    now.toLocaleDateString('es-PE',{day:'2-digit',month:'short',year:'numeric'}) + ' · ' +
+    now.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+setInterval(updateClock, 1000); updateClock();
+
+// ── NAVEGACIÓN ───────────────────────────────────
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  el.classList.add('active');
+  initCharts(id);
+}
+
+// ── COLORES ──────────────────────────────────────
+const C_AZUL    = '#005B8E';
+const C_NARANJA = '#E8A020';
+const C_VERDE   = '#1A9E5C';
+const C_ROJO    = '#D63031';
+const C_GRAY    = '#BDC3C7';
+const C_AZUL2   = '#1A82C0';
+
+const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Set','Oct','Nov','Dic'];
+const prog  = [0, 2, 2, 1, 2, 2, 1, 0, 2, 1, 2, 2];
+const ejec  = [0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
+const chartsInit = {};
+
+function initCharts(page) {
+  if (chartsInit[page]) return;
+  chartsInit[page] = true;
+
+  const defaults = {
+    plugins: { legend: { labels: { font: { family: 'Sora', size: 12 } } } },
+    scales: { x: { ticks: { font: { family: 'Sora', size: 11 } } },
+              y: { ticks: { font: { family: 'Sora', size: 11 } } } }
+  };
+
+  if (page === 'resumen') {
+    // Trimestral
+    new Chart(document.getElementById('chartTrimestral'), {
+      type: 'bar',
+      data: {
+        labels: ['I Trimestre\n(Ene-Mar)', 'II Trimestre\n(Abr-Jun)', 'III Trimestre\n(Jul-Set)', 'IV Trimestre\n(Oct-Dic)'],
+        datasets: [
+          { label: 'Programado', data: [4,5,3,5], backgroundColor: 'rgba(0,91,142,.3)', borderColor: C_AZUL, borderWidth: 2, borderRadius: 6 },
+          { label: 'Ejecutado',  data: [4,0,0,0], backgroundColor: C_VERDE, borderColor: '#0E7840', borderWidth: 1, borderRadius: 6 },
+        ]
+      },
+      options: { ...defaults, responsive: true, plugins: { legend: { position: 'top' } } }
+    });
+
+    // Mensual línea
+    new Chart(document.getElementById('chartMensual'), {
+      type: 'line',
+      data: {
+        labels: meses,
+        datasets: [
+          { label: 'Programado', data: prog, borderColor: C_AZUL, backgroundColor: 'rgba(0,91,142,.1)', fill: true, tension: .3, pointRadius: 5 },
+          { label: 'Ejecutado',  data: ejec, borderColor: C_VERDE, backgroundColor: 'rgba(26,158,92,.15)', fill: true, tension: .3, pointRadius: 5 }
+        ]
+      },
+      options: { ...defaults, responsive: true }
+    });
+
+    // Pie trimestres
+    new Chart(document.getElementById('chartPie'), {
+      type: 'doughnut',
+      data: {
+        labels: ['I Trim (4)', 'II Trim (5)', 'III Trim (3)', 'IV Trim (5)'],
+        datasets: [{ data: [4,5,3,5], backgroundColor: [C_VERDE, C_NARANJA, C_AZUL2, C_AZUL], hoverOffset: 8 }]
+      },
+      options: { responsive: true, cutout: '60%', plugins: { legend: { position: 'bottom' } } }
+    });
+  }
+
+  if (page === 'metas') {
+    new Chart(document.getElementById('chartBarMeses'), {
+      type: 'bar',
+      data: {
+        labels: meses,
+        datasets: [
+          { label: 'Programado', data: prog, backgroundColor: 'rgba(0,91,142,.35)', borderColor: C_AZUL, borderWidth: 2, borderRadius: 5 },
+          { label: 'Ejecutado',  data: ejec, backgroundColor: C_VERDE, borderColor: '#0E7840', borderWidth: 1, borderRadius: 5 }
+        ]
+      },
+      options: { ...defaults, responsive: true, scales: { y: { beginAtZero: true, max: 3, ticks: { stepSize: 1 } } } }
+    });
+  }
+
+  if (page === 'riesgos') {
+    new Chart(document.getElementById('chartRiesgo'), {
+      type: 'bubble',
+      data: {
+        datasets: [
+          { label: 'Límite Presupuestal', data: [{x:4,y:4,r:22}], backgroundColor: 'rgba(214,48,49,.6)', borderColor: C_ROJO },
+          { label: 'Demora Administrativa', data: [{x:3,y:3,r:18}], backgroundColor: 'rgba(232,160,32,.6)', borderColor: C_NARANJA },
+          { label: 'Estudio Mercado', data: [{x:2,y:3,r:14}], backgroundColor: 'rgba(232,160,32,.4)', borderColor: C_NARANJA },
+          { label: 'Ciberseguridad', data: [{x:2,y:2,r:12}], backgroundColor: 'rgba(26,158,92,.5)', borderColor: C_VERDE },
+        ]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          x: { min:0, max:5, title: { display:true, text:'Probabilidad', font:{ family:'Sora' } } },
+          y: { min:0, max:5, title: { display:true, text:'Impacto', font:{ family:'Sora' } } }
+        },
+        plugins: { legend: { position:'bottom' } }
+      }
+    });
+  }
+
+  if (page === 'documentos') {
+    new Chart(document.getElementById('chartMemos'), {
+      type: 'bar',
+      data: {
+        labels: ['Febrero 2026', 'Marzo 2026'],
+        datasets: [
+          { label: 'Memorandos UTI', data: [4,3], backgroundColor: C_AZUL, borderRadius: 8 },
+          { label: 'Memorandos UPPM', data: [1,1], backgroundColor: C_NARANJA, borderRadius: 8 },
+        ]
+      },
+      options: { ...defaults, responsive: true, indexAxis: 'y',
+        scales: { x: { stacked:false, ticks: { stepSize: 1 } }, y: { stacked:false } } }
+    });
+  }
+}
+
+// Inicializar charts de la página activa al cargar
+initCharts('resumen');
+
+// Animar barras de progreso al cargar
+window.addEventListener('load', () => {
+  document.querySelectorAll('.progress-bar-fill').forEach(el => {
+    const w = el.style.width; el.style.width = '0';
+    setTimeout(() => el.style.width = w, 300);
+  });
+});
+</script>
+</body>
+</html>
