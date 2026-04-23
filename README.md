@@ -1,4 +1,4 @@
-# 📊 Dashboard POI 2026 — UTI · Programa Nacional Cuna Más
+# 📊 POI 2026 — UTI · Programa Nacional Cuna Más
 
 > **Tablero interactivo de seguimiento del Plan Operativo Institucional 2026**  
 > Unidad de Tecnologías de la Información · PNCM / MIDIS
